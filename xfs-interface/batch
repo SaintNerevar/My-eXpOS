@@ -1,0 +1,11 @@
+load --os $HOME/repos/myexpos/spl/spl_progs/os_startup.xsm
+load --library $HOME/repos/myexpos/expl/library.lib
+load --int=timer $HOME/repos/myexpos/spl/spl_progs/sample_timer.xsm
+load --int=7 $HOME/repos/myexpos/spl/spl_progs/sample_int7.xsm
+load --int=10 $HOME/repos/myexpos/spl/spl_progs/sample_int10.xsm
+load --init $HOME/repos/myexpos/expl/samples/odd.xsm
+load --idle $HOME/repos/myexpos/expl/samples/idle.xsm
+load --module 7 $HOME/repos/myexpos/spl/spl_progs/boot_module.xsm
+load --module 5 $HOME/repos/myexpos/spl/spl_progs/scheduler.xsm
+load --module 0 $HOME/repos/myexpos/spl/spl_progs/resource_manager.xsm
+load --module 4 $HOME/repos/myexpos/spl/spl_progs/device_manager.xsm

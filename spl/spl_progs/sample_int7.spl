@@ -1,0 +1,47 @@
+//Set MODE to 5 (write) in Process Table
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 5;
+
+alias userSP R0;
+userSP = SP;
+
+//save userSP in process table and switch to kernel Stack
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE +1]*16 + 12];
+
+//get argument 1 (file descriptor)
+alias physicalPageNum R1;
+alias offset R2;
+alias fileDesc R3; 
+physicalPageNum = [PTBR + 2*((userSP-4)/512)];
+offset = (userSP - 4) % 512;
+fileDesc = [physicalPageNum*512 + offset];
+
+//check if file descriptor is valid
+if (fileDesc != -2) then
+    //code when file descriptor is invalid
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = -1; // Return value -1 on failure
+else
+    //code when file descriptor is valid
+    physicalPageNum = [PTBR + 2*((userSP - 3)/512)];
+    offset = (userSP - 3) % 512;
+    alias word R4;
+    word = [physicalPageNum*512 + offset];
+
+    multipush(R0, R1, R2, R3, R4);
+    R1 = 3;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = word;
+    call DEVICE_MANAGER;
+    multipop(R0, R1, R2, R3, R4);
+
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = 0; //Return value 0 on success
+endif;
+
+//switch back to user stack, set MODE to 0 and return
+SP = userSP;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+ireturn;
