@@ -6,7 +6,7 @@ int main()
 	begin
 		a = 1;
 		while (a == 1) do
-			temp = exposcall ( "Write" , -2, "IDLE" );
+			temp = 1;
 		endwhile;
 		return 0;
 	end

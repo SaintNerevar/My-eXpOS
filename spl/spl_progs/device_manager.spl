@@ -1,8 +1,8 @@
 alias functionNum R1;
 alias currentPID R2;
-alias word R3;
 
 if (functionNum == 3) then
+    alias word R3;
     multipush(R1, R2, R3);
     R1 = 8;
     R2 = currentPID;
@@ -16,6 +16,28 @@ if (functionNum == 3) then
     R2 = currentPID;
     call RESOURCE_MANAGER;
     multipop(R1, R2, R3);
+endif;
+
+if (functionNum == 4) then
+    alias wordAddress R3;
+    multipush(R1, R2, R3);
+    R1 = 8;
+    R2 = currentPID;
+    call RESOURCE_MANAGER;
+    multipop(R1, R2, R3);
+
+    read;
+
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4] = WAIT_TERMINAL;
+    multipush(R1, R2, R3);
+    call SCHEDULER;
+    multipop(R1, R2, R3);
+
+    alias physicalPageNum R4;
+    alias offset R5;
+    physicalPageNum = [PTBR + 2*(wordAddress/512)];
+    offset = wordAddress % 512;
+    [physicalPageNum*512 + offset] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 8];
 endif;
 
 return;

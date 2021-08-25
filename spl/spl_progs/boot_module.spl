@@ -14,9 +14,17 @@ loadi(23, 36);
 loadi(2, 15);
 loadi(3, 16);
 
+//Console Interrupt
+loadi(8, 21);
+loadi(9, 22);
+
 //Timer Interrupt
 loadi(4, 17);
 loadi(5, 18);
+
+//INT 6 (READ)
+loadi(14, 27);
+loadi(15, 28);
 
 //INT 7 (write)
 loadi(16,29);
@@ -87,7 +95,7 @@ currentPID = 2;
 currentFreeMemBlock = 83;
 currentDiskBlock = 69;
 
-while (currentPID < 4) do
+while (currentPID < 0) do
     PTBR = PAGE_TABLE_BASE + currentPID*20;
 
     //Shared Library
