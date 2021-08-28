@@ -6,6 +6,10 @@ loadi(64, 14);
 loadi(65, 7);
 loadi(66, 8);
 
+//INT 9
+loadi(20, 33);
+loadi(21, 34);
+
 //INT 10
 loadi(22, 35);
 loadi(23, 36);
@@ -42,6 +46,18 @@ loadi(41, 54);
 //Device Manager Module
 loadi(48, 61);
 loadi(49, 62);
+
+//Process Manager
+loadi(42, 55);
+loadi(43, 56);
+
+//Memory Manager
+loadi(44, 57);
+loadi(45, 58);
+
+//Inode Table
+loadi(59, 3);
+loadi(60, 4);
 
 PTBR = PAGE_TABLE_BASE + 20;
 
@@ -148,5 +164,19 @@ while (currentPID < 16) do
     [process_table_entry + 4] = TERMINATED;
     currentPID = currentPID + 1;
 endwhile;
+
+alias counter R0;
+counter = 0;
+while (counter < MAX_MEM_PAGE) do
+    if (counter < 83) then
+        [MEMORY_FREE_LIST + counter] = 1;
+    else
+        [MEMORY_FREE_LIST + counter] = 0;
+    endif;
+    counter = counter + 1;
+endwhile;
+
+[SYSTEM_STATUS_TABLE + 3] = 0;
+[SYSTEM_STATUS_TABLE + 2] = 45;
 
 return;
