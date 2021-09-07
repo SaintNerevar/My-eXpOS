@@ -1,10 +1,10 @@
 alias functionNum R1;
 alias currentPID R2;
 
-if (functionNum == 3) then
+if (functionNum == TERMINAL_WRITE) then
     alias word R3;
     multipush(R1, R2, R3);
-    R1 = 8;
+    R1 = ACQUIRE_TERMINAL;
     R2 = currentPID;
     call RESOURCE_MANAGER;
     multipop(R1, R2, R3);
@@ -12,16 +12,16 @@ if (functionNum == 3) then
     print word;
 
     multipush(R1, R2, R3);
-    R1 = 9;
+    R1 = RELEASE_TERMINAL;
     R2 = currentPID;
     call RESOURCE_MANAGER;
     multipop(R1, R2, R3);
 endif;
 
-if (functionNum == 4) then
+if (functionNum == TERMINAL_READ) then
     alias wordAddress R3;
     multipush(R1, R2, R3);
-    R1 = 8;
+    R1 = ACQUIRE_TERMINAL;
     R2 = currentPID;
     call RESOURCE_MANAGER;
     multipop(R1, R2, R3);
@@ -38,6 +38,27 @@ if (functionNum == 4) then
     physicalPageNum = [PTBR + 2*(wordAddress/512)];
     offset = wordAddress % 512;
     [physicalPageNum*512 + offset] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 8];
+endif;
+
+if (functionNum == DISK_LOAD) then
+    alias pageNum R3;
+    alias blockNum R4;
+
+    multipush(R1, R2, R3, R4);
+    R1 = ACQUIRE_DISK;
+    R2 = currentPID;
+    call RESOURCE_MANAGER;
+    multipop(R1, R2, R3, R4);
+
+    [DISK_STATUS_TABLE + 1] = 0;
+    [DISK_STATUS_TABLE + 2] = pageNum;
+    [DISK_STATUS_TABLE + 3] = blockNum;
+
+    load(pageNum, blockNum);
+
+    [PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
+    
+    call SCHEDULER;
 endif;
 
 return;

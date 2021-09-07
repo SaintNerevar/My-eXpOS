@@ -95,7 +95,14 @@ if (fileNum != MAX_FILE_NUM) then
             freePage = R0;
             multipop(R0, R1, R2, R3, R4, R5, R6, R7, R8);
 
-            loadi(freePage, diskBlock);
+            multipush(R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+            R1 = DISK_LOAD;
+            R2 = [SYSTEM_STATUS_TABLE + 1]; //Might cause problems. Look out
+            R3 = freePage;
+            R4 = diskBlock;
+            call DEVICE_MANAGER;
+            multipop(R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+
             [PTBR + 2*(counter + 4)] = freePage;
             [PTBR + 2*(counter + 4) + 1] = "0100";
         endif;
@@ -103,7 +110,14 @@ if (fileNum != MAX_FILE_NUM) then
     endwhile;
 
     //Set user stack pointer to code
-    [[PTBR + 16]*512] = [[PTBR + 8]*512 + 1];   
+    [[PTBR + 16]*512] = [[PTBR + 8]*512 + 1];
+
+    //initialize Per-Process Resource Table
+    counter = 0;
+    while (counter < 16) do
+        [[process_table_entry + 11]*512 + 496 + counter] = -1;
+        counter = counter + 1;
+    endwhile;
 else
     physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
     offset = (userSP - 1) % 512;

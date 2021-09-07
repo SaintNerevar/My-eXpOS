@@ -13,4 +13,5 @@ load --module 4 $HOME/repos/myexpos/spl/spl_progs/device_manager.xsm
 load --module 1 $HOME/repos/myexpos/spl/spl_progs/process_manager.xsm
 load --module 2 $HOME/repos/myexpos/spl/spl_progs/memory_manager.xsm
 load --int=console $HOME/repos/myexpos/spl/spl_progs/console_interrupt.xsm
+load --int=disk $HOME/repos/myexpos/spl/spl_progs/disk_interrupt.xsm
 load --int=6 $HOME/repos/myexpos/spl/spl_progs/int6.xsm

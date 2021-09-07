@@ -26,6 +26,10 @@ loadi(9, 22);
 loadi(4, 17);
 loadi(5, 18);
 
+//Disk Interrupt
+loadi(6, 19);
+loadi(7, 20);
+
 //INT 6 (READ)
 loadi(14, 27);
 loadi(15, 28);
@@ -42,6 +46,7 @@ loadi(51,64);
 loadi(40, 53);
 loadi(41, 54);
 [TERMINAL_STATUS_TABLE] = 0;
+[DISK_STATUS_TABLE] = 0;
 
 //Device Manager Module
 loadi(48, 61);
@@ -103,69 +108,26 @@ PTBR = PAGE_TABLE_BASE + 20;
 [PROCESS_TABLE + 16 + 15] = 10;
 [76*512] = [65*512 + 1];
 
-alias currentPID R0;
-alias currentFreeMemBlock R1;
-alias currentDiskBlock R2;
-alias process_table_entry R3;
-currentPID = 2;
-currentFreeMemBlock = 83;
-currentDiskBlock = 69;
-
-while (currentPID < 0) do
-    PTBR = PAGE_TABLE_BASE + currentPID*20;
-
-    //Shared Library
-    [PTBR + 0] = 63;
-    [PTBR + 1] = "0100";
-    [PTBR + 2] = 64;
-    [PTBR + 3] = "0100";
-
-    //Heap
-    [PTBR + 4] = currentFreeMemBlock;
-    [PTBR + 5] = "0110";
-    [PTBR + 6] = currentFreeMemBlock + 1;
-    [PTBR + 7] = "0110";
-
-    //Load Code into Memory (Assumes single block of code)
-    loadi(currentFreeMemBlock + 2, currentDiskBlock);
-    [PTBR + 8] = currentFreeMemBlock + 2;
-    [PTBR + 9] = "0100";
-    [PTBR + 10] = currentFreeMemBlock + 3;
-    [PTBR + 11] = "0100";
-    [PTBR + 12] = -1;
-    [PTBR + 13] = "0000";
-    [PTBR + 14] = -1;
-    [PTBR + 15] = "0000";
-
-    //Stack
-    [PTBR + 16] = currentFreeMemBlock + 4;
-    [PTBR + 17] = "0110";
-    [PTBR + 18] = currentFreeMemBlock + 5;
-    [PTBR + 19] = "0110";
-
-    //Initialize process table
-    process_table_entry = PROCESS_TABLE + currentPID*16;
-    [process_table_entry + 1] = currentPID;
-    [process_table_entry + 4] = CREATED;
-    [process_table_entry + 11] = currentFreeMemBlock + 6;
-    [process_table_entry + 12] = 0;
-    [process_table_entry + 13] = 8*512;
-    [process_table_entry + 14] = PTBR;
-    [process_table_entry + 15] = 10;
-    [(currentFreeMemBlock+4)*512] = [(currentFreeMemBlock+2)*512 + 1];
-
-    currentFreeMemBlock = currentFreeMemBlock + 7;
-    currentDiskBlock = currentDiskBlock + 1;
-    currentPID = currentPID + 1;
+//per process resource table for INIT
+alias counter R0;
+counter = 0;
+while (counter < 16) do
+    [[PROCESS_TABLE + 16 + 11]*512 + 496 + counter] = -1;
+    counter = counter + 1;
 endwhile;
 
+alias currentPID R1;
+alias process_table_entry R2;
+currentPID = 2;
+
+//Initialize STATE for all other processes
 while (currentPID < 16) do
     process_table_entry = PROCESS_TABLE + currentPID*16;
     [process_table_entry + 4] = TERMINATED;
     currentPID = currentPID + 1;
 endwhile;
 
-alias counter R0;
+//Initialize Memory Free List
 counter = 0;
 while (counter < MAX_MEM_PAGE) do
     if (counter < 83) then

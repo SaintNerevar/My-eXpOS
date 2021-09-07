@@ -1,0 +1,27 @@
+breakpoint;
+//Change from user to kernel stack and save register context
+// WARNING!!! DO NOT CHANGE OR ALIAS REGISTERS BEFORE BACKUP!!
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11] * 512 - 1;
+backup;
+
+[DISK_STATUS_TABLE] = 0;
+
+alias process_table_entry R0;
+alias counter R1;
+
+counter = 1;
+while (counter < MAX_PROC_NUM) do
+    process_table_entry = PROCESS_TABLE + counter*16;
+    if ([process_table_entry + 4] == WAIT_DISK) then
+        [process_table_entry + 4] = READY;
+    endif;
+    counter = counter + 1;
+endwhile;
+
+restore;
+// CAUTION!!! USING REGISTER ALIASES AFTER RESTORE MAY LEAD TO BUGS!!
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;   //Set Mode Flag to 0
+breakpoint;
+ireturn;
