@@ -64,6 +64,9 @@ loadi(45, 58);
 loadi(59, 3);
 loadi(60, 4);
 
+//Disk Free List
+loadi(61, 2);
+
 PTBR = PAGE_TABLE_BASE + 20;
 
 // INIT
@@ -113,6 +116,13 @@ alias counter R0;
 counter = 0;
 while (counter < 16) do
     [[PROCESS_TABLE + 16 + 11]*512 + 496 + counter] = -1;
+    counter = counter + 1;
+endwhile;
+
+//Disk Map table for INIT
+counter = 0;
+while (counter < 10) do
+    [DISK_MAP_TABLE + 10 + counter] = -1;
     counter = counter + 1;
 endwhile;
 

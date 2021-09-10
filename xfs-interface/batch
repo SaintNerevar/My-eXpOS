@@ -15,3 +15,4 @@ load --module 2 $HOME/repos/myexpos/spl/spl_progs/memory_manager.xsm
 load --int=console $HOME/repos/myexpos/spl/spl_progs/console_interrupt.xsm
 load --int=disk $HOME/repos/myexpos/spl/spl_progs/disk_interrupt.xsm
 load --int=6 $HOME/repos/myexpos/spl/spl_progs/int6.xsm
+load --exhandler $HOME/repos/myexpos/spl/spl_progs/exception_handler.xsm

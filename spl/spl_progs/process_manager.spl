@@ -43,6 +43,26 @@ if (functionNum == FREE_PAGE_TABLE) then
 
         pageNum = pageNum + 1;
     endwhile;
+
+    alias counter R5;
+    alias diskMapTable R6;
+    diskMapTable = DISK_MAP_TABLE + currentPID*10;
+    counter = 0;
+    while (counter < 10) do
+        if (counter >= 4 && counter <=7) then
+            [diskMapTable + counter] = -1;
+        endif;
+
+        if ([diskMapTable + counter] != -1) then
+            multipush(R1, R2, R3, R4, R5, R6);
+            R1 = RELEASE_BLOCK;
+            R2 = [diskMapTable + counter];
+            call MEMORY_MANAGER;
+            multipop(R1, R2, R3, R4, R5, R6);
+            [diskMapTable + counter] = -1;
+        endif;
+        counter = counter + 1;
+    endwhile;
     return;
 endif;
 

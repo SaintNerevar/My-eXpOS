@@ -1,0 +1,98 @@
+breakpoint;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = -1;
+//Change from user to kernel stack and save register context
+// WARNING!!! DO NOT CHANGE OR ALIAS REGISTERS BEFORE BACKUP!!
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11] * 512 - 1;
+backup;
+
+multipush(EIP);
+
+alias userSP R0;
+userSP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+
+if (EC == 1) then
+    print("Error: 1");
+    print("Exiting..");
+    R1 = EXIT_PROCESS;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call PROCESS_MANAGER;
+    call SCHEDULER;
+endif;
+
+
+if (EC == 2) then
+    print("Error: 2");
+    print("Exiting..");
+    R1 = EXIT_PROCESS;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call PROCESS_MANAGER;
+    call SCHEDULER;
+endif;
+
+
+if (EC == 3) then
+    print("Error: 3");
+    print("Exiting..");
+    R1 = EXIT_PROCESS;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call PROCESS_MANAGER;
+    call SCHEDULER;
+endif;
+
+
+if (userSP >= PTLR*512) then
+    print("Stack Full");
+    print("Exiting..");
+    R1 = EXIT_PROCESS;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call PROCESS_MANAGER;
+    call SCHEDULER;
+endif;
+
+
+if (EC == 0) then
+    if (EPN >= 4 && EPN <= 7) then
+        alias codeBlock R1;
+        alias codePage R2;
+        codeBlock = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + EPN];
+        multipush(R0, R1);
+        R2 = codeBlock;  //cuz codeBlock is R1
+        R1 = GET_CODE_PAGE;
+        call MEMORY_MANAGER;
+        codePage = R0;
+        multipop(R0, R1);
+
+        [PTBR + 2*EPN] = codePage;
+        [PTBR + 2*EPN + 1] = "1100";
+    else
+        alias freePage R1;
+        multipush(R0);
+        R1 = GET_FREE_PAGE;
+        call MEMORY_MANAGER;
+        freePage = R0;
+        multipop(R0);
+
+        [PTBR + 4] = freePage;
+        [PTBR + 5] = "1110";
+        
+        multipush(R0);
+        R1 = GET_FREE_PAGE;
+        call MEMORY_MANAGER;
+        freePage = R0;
+        multipop(R0);
+
+        [PTBR + 6] = freePage;
+        [PTBR + 7] = "1110";
+    endif;
+
+    multipop(EIP);
+
+    restore;
+    // CAUTION!!! USING REGISTER ALIASES AFTER RESTORE MAY LEAD TO BUGS!!
+    SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] + 1;
+    [[PTBR + 2*(SP/512)]*512 + SP%512] = EIP;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;   //Set Mode Flag to 0
+    breakpoint;
+    ireturn;
+endif;
