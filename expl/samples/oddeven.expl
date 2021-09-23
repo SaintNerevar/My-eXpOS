@@ -1,0 +1,16 @@
+int main() {
+    decl
+        int PID, temp;
+    enddecl
+    begin
+        PID = exposcall("Fork");
+        temp = exposcall("Write", -2, PID);
+        
+        if (PID == 0) then
+            temp = exposcall("Exec", "even.xsm");
+        else
+            temp = exposcall("Exec", "odd.xsm");
+        endif;
+        return 0;
+    end
+}

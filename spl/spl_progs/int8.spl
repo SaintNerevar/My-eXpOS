@@ -1,0 +1,149 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 8;
+
+alias userSP R0;
+alias process_table_entry R1;
+userSP = SP;
+process_table_entry = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+[process_table_entry + 13] = SP;
+SP = [process_table_entry + 11]*512 - 1;
+
+alias childPID R2;
+multipush(R0, R1);
+R1 = GET_PCB_ENTRY;
+call PROCESS_MANAGER;
+childPID = R0;
+multipop(R0, R1);
+
+alias child_ptbr R3;
+alias child_process_table_entry R4;
+child_ptbr = PAGE_TABLE_BASE + childPID*20;
+child_process_table_entry = PROCESS_TABLE + childPID*16;
+
+if (childPID == -1) then
+    alias physicalPageNum R5;
+    alias offset R6;
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = -1;
+else
+    alias freePage R5;
+    if ([PTBR + 5] == "0000") then
+        //Allocate Heap pages if not already allocated
+        multipush(R0, R1, R2, R3, R4);
+        R1 = GET_FREE_PAGE;
+        call MEMORY_MANAGER;
+        freePage = R0;
+        multipop(R0, R1, R2, R3, R4);
+
+        [PTBR + 4] = freePage;
+        [PTBR + 5] = "0110";
+
+        multipush(R0, R1, R2, R3, R4);
+        R1 = GET_FREE_PAGE;
+        call MEMORY_MANAGER;
+        freePage = R0;
+        multipop(R0, R1, R2, R3, R4);
+
+        [PTBR + 6] = freePage;
+        [PTBR + 7] = "0110";
+    endif;
+
+    //Allocate Stack and User Area Page
+    multipush(R0, R1, R2, R3, R4);
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
+    freePage = R0;
+    multipop(R0, R1, R2, R3, R4);
+
+    [child_ptbr + 16] = freePage;
+    [child_ptbr + 17] = [PTBR + 17];
+
+    multipush(R0, R1, R2, R3, R4);
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
+    freePage = R0;
+    multipop(R0, R1, R2, R3, R4);
+
+    [child_ptbr + 18] = freePage;
+    [child_ptbr + 19] = [PTBR + 19];
+
+    multipush(R0, R1, R2, R3, R4);
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
+    freePage = R0;
+    multipop(R0, R1, R2, R3, R4);
+
+    [child_process_table_entry + 11] = freePage;
+
+    //Initialize Child Process table
+    [child_process_table_entry + 3] = [process_table_entry + 3];
+    [child_process_table_entry + 6] = [process_table_entry + 6];
+    [child_process_table_entry + 10] = [process_table_entry + 10];
+    [child_process_table_entry + 7] = [process_table_entry + 7];
+    [child_process_table_entry + 13] = [process_table_entry + 13];
+    [child_process_table_entry + 1] = childPID;
+    [child_process_table_entry + 2] = [SYSTEM_STATUS_TABLE + 1];
+    [child_process_table_entry + 4] = CREATED;
+    [child_process_table_entry + 9] = 0;
+    [child_process_table_entry + 12] = 0;
+
+    //Copy per process resource table
+    alias counter R5;
+    counter = 0;
+    while (counter < 16) do
+        [[child_process_table_entry + 11]*512 + 496 + counter]
+            = [[process_table_entry + 11]*512 + 496 + counter];
+        counter = counter + 1;
+    endwhile;
+
+    //Copy Disk Map Table
+    counter = 0;
+    while (counter < 10) do
+        [DISK_MAP_TABLE + childPID*10 + counter]
+            = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + counter];
+        counter = counter + 1;
+    endwhile;
+
+    //Initialize child Page Table and increment mem_free_list
+    counter = 0;
+    while (counter < 16) do
+        [child_ptbr + counter] = [PTBR + counter];
+        counter = counter + 1;
+    endwhile;
+
+    counter = 2;
+    while (counter < 8) do
+        [MEMORY_FREE_LIST + [PTBR + 2*counter]]
+            = [MEMORY_FREE_LIST + [PTBR + 2*counter]] + 1;
+        counter = counter + 1;
+    endwhile;
+
+    //Copy the stack pages
+    counter = 8*512;
+    while (counter <= userSP) do
+        [[child_ptbr + 2*(counter/512)]*512 + counter%512]
+            = [[PTBR + 2*(counter/512)]*512 + counter%512];
+        counter = counter + 1;
+    endwhile;
+
+    //This is used by the scheduler
+    [[child_process_table_entry + 11]*512] = BP;
+
+    alias physicalPageNum R5;
+    alias offset R6;
+    //Return child PID for parent process
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = childPID;
+
+    //Return 0 for child process
+    physicalPageNum = [child_ptbr + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = 0;
+    breakpoint;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+SP = userSP;
+ireturn;

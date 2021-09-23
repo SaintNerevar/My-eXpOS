@@ -79,3 +79,28 @@ if (functionNum == FREE_USER_AREA_PAGE) then
 
     return;
 endif;
+
+if (functionNum == GET_PCB_ENTRY) then
+    alias PID R2;
+    alias process_table_entry R3;
+    PID = 2;
+
+    while (PID < MAX_PROC_NUM) do
+        process_table_entry = PROCESS_TABLE + PID*16;
+        if ([process_table_entry + 4] == TERMINATED) then
+            break;
+        endif;
+        PID = PID + 1;
+    endwhile;
+
+    if (PID != MAX_PROC_NUM) then
+        [process_table_entry + 1] = PID;
+        [process_table_entry + 4] = ALLOCATED;
+        [process_table_entry + 14] = PAGE_TABLE_BASE + PID*20;
+        [process_table_entry + 15] = 10;
+        R0 = PID;
+    else
+        R0 = -1;
+    endif;
+    return;
+endif;

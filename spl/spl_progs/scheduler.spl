@@ -16,6 +16,9 @@ while (currentPID < 15) do
     currentPID = currentPID + 1;
     state = [PROCESS_TABLE + currentPID*16 + 4];
     if (state == CREATED || state == READY) then
+        if (state == CREATED) then
+            BP = [[PROCESS_TABLE + currentPID*16 + 11]*512];
+        endif;
         newPID = currentPID;
         break;
     endif;
