@@ -15,6 +15,23 @@ if (functionNum == EXIT_PROCESS) then
     call PROCESS_MANAGER;
     multipop(R1, R2);
 
+    if ([PROCESS_TABLE + currentPID*16 + 9] != INT_EXEC) then
+        alias PID R3;
+        PID = 1;
+        while (PID < MAX_PROC_NUM) do
+            if ([PROCESS_TABLE + PID*16 + 4] == WAIT_PROCESS
+                && [PROCESS_TABLE + PID*16 + 5] == currentPID
+            ) then
+                [PROCESS_TABLE + PID*16 + 4] = READY;
+            endif;
+
+            if ([PROCESS_TABLE + PID*16 + 2] == currentPID) then
+                [PROCESS_TABLE + PID*16 + 2] = -1;
+            endif;
+            PID = PID + 1;
+        endwhile;
+    endif;
+
     [PROCESS_TABLE + currentPID*16 + 4] = TERMINATED;
     return;
 endif;

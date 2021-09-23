@@ -1,0 +1,78 @@
+alias userSP R0;
+alias process_table_entry R1;
+userSP = SP;
+process_table_entry = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+[process_table_entry + 13] = SP;
+SP = [process_table_entry + 11]*512 - 1;
+
+alias physicalPageNum R2;
+alias offset R3;
+alias systemCallNum R4;
+physicalPageNum = [PTBR + 2*((userSP - 5)/512)];
+offset = (userSP - 5) % 512;
+systemCallNum = [physicalPageNum*512 + offset];
+
+[process_table_entry + 9] = systemCallNum;
+
+if (systemCallNum == INT_WAIT) then
+    alias PID R5;
+    physicalPageNum = [PTBR + 2*((userSP - 4)/512)];
+    offset = (userSP - 4) % 512;
+    PID = [physicalPageNum*512 + offset];
+
+    if (PID == [SYSTEM_STATUS_TABLE + 1] 
+        || [PROCESS_TABLE + PID*16 + 4] == TERMINATED
+        || PID < 1
+        || PID > 15
+    ) then
+        physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+        offset = (userSP - 1) % 512;
+        [physicalPageNum*512 + offset] = -1;
+    else
+        [process_table_entry + 4] = WAIT_PROCESS;
+        [process_table_entry + 5] = PID;
+
+        multipush(R0, R1, R2, R3, R4, R5);
+        call SCHEDULER;
+        multipop(R0, R1, R2, R3, R4, R5);
+
+        physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+        offset = (userSP - 1) % 512;
+        [physicalPageNum*512 + offset] = 0;
+    endif;
+endif;
+
+if (systemCallNum == INT_SIGNAL) then
+    alias PID R5;
+    PID = 1;
+
+    while (PID < MAX_PROC_NUM) do
+        if ([PROCESS_TABLE + PID*16 + 4] == WAIT_PROCESS
+            && [PROCESS_TABLE + PID*16 + 5] == [SYSTEM_STATUS_TABLE + 1]
+        ) then
+            [PROCESS_TABLE + PID*16 + 4] = READY;
+        endif;
+        PID = PID + 1;
+    endwhile;
+
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = 0;
+endif;
+
+if (systemCallNum == INT_GETPID) then
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = [SYSTEM_STATUS_TABLE + 1];
+endif;
+
+if (systemCallNum == INT_GETPPID) then
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = [process_table_entry + 2];
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+SP = userSP;
+ireturn;

@@ -4,7 +4,7 @@ load --int=timer $HOME/repos/myexpos/spl/spl_progs/sample_timer.xsm
 load --int=7 $HOME/repos/myexpos/spl/spl_progs/sample_int7.xsm
 load --int=9 $HOME/repos/myexpos/spl/spl_progs/int9.xsm
 load --int=10 $HOME/repos/myexpos/spl/spl_progs/sample_int10.xsm
-load --init $HOME/repos/myexpos/expl/samples/shell1.xsm
+load --init $HOME/repos/myexpos/expl/samples/shell2.xsm
 load --idle $HOME/repos/myexpos/expl/samples/idle.xsm
 load --module 7 $HOME/repos/myexpos/spl/spl_progs/boot_module.xsm
 load --module 5 $HOME/repos/myexpos/spl/spl_progs/scheduler.xsm
@@ -17,3 +17,5 @@ load --int=disk $HOME/repos/myexpos/spl/spl_progs/disk_interrupt.xsm
 load --int=6 $HOME/repos/myexpos/spl/spl_progs/int6.xsm
 load --exhandler $HOME/repos/myexpos/spl/spl_progs/exception_handler.xsm
 load --int=8 $HOME/repos/myexpos/spl/spl_progs/int8.xsm
+load --int=11 $HOME/repos/myexpos/spl/spl_progs/int11.xsm
+load --int=15 $HOME/repos/myexpos/spl/spl_progs/int15.xsm
