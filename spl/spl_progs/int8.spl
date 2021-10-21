@@ -90,10 +90,19 @@ else
 
     //Copy per process resource table
     alias counter R5;
+    alias pprt R6;
+    alias child_pprt R7;
+    child_pprt = [child_process_table_entry + 11]*512 + 496;
+    pprt = [process_table_entry + 11]*512 + 496;
     counter = 0;
-    while (counter < 16) do
-        [[child_process_table_entry + 11]*512 + 496 + counter]
-            = [[process_table_entry + 11]*512 + 496 + counter];
+    while (counter < 8) do
+        [child_pprt + 2*counter] = [pprt + 2*counter];
+        [child_pprt + 2*counter + 1] = [pprt + 2*counter + 1];
+
+        if ([pprt + 2*counter] == SEMAPHORE) then
+            [SEMAPHORE_TABLE + 4*[pprt + 2*counter + 1] + 1]
+                = [SEMAPHORE_TABLE + 4*[pprt + 2*counter + 1] + 1] + 1;
+        endif;
         counter = counter + 1;
     endwhile;
 

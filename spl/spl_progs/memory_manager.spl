@@ -17,10 +17,10 @@ if (functionNum == GET_FREE_PAGE) then
     [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] - 1;
 
     alias pageNum R4;
-    pageNum = 0;
-    while (pageNum < MAX_MEM_PAGE) do
+    pageNum = 76;
+    while (pageNum < NUM_MEM_PAGES) do
         if ([MEMORY_FREE_LIST + pageNum] == 0) then
-            [MEMORY_FREE_LIST + pageNum] = [MEMORY_FREE_LIST + pageNum] + 1;
+            [MEMORY_FREE_LIST + pageNum] = 1;
             R0 = pageNum;
             [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
             break;
@@ -68,9 +68,8 @@ if (functionNum == GET_CODE_PAGE) then
     alias page_table_entry R6;
     alias physicalPageNum R7;
     codePage = -1;
-    PID = 0;
-    while (PID < MAX_PROC_NUM && codePage == -1) do
-        PID = PID + 1;
+    PID = 1;
+    while (PID < MAX_PROC_NUM) do
         diskMapTable = DISK_MAP_TABLE + PID*10;
         if (diskBlock == [diskMapTable + 4]) then
             codePage = 4;
@@ -86,37 +85,39 @@ if (functionNum == GET_CODE_PAGE) then
         endif;
 
         page_table_entry = PAGE_TABLE_BASE + PID*20;
-        physicalPageNum = [page_table_entry + 2*codePage];
-        if ([page_table_entry + 2*codePage + 1] == "0000") then
+
+        if (codePage != -1
+            && [page_table_entry + 2*codePage + 1] != "0000"
+        ) then
+            alias memory_free_list_entry R8;
+            physicalPageNum = [page_table_entry + 2*codePage];
+            memory_free_list_entry = MEMORY_FREE_LIST + physicalPageNum;
+            [memory_free_list_entry] = [memory_free_list_entry] + 1;
+            R0 = physicalPageNum;
+            return;
+        else
             codePage = -1;
         endif;
+        PID = PID + 1;
     endwhile;
+    
+    alias freePage R7;
+    multipush(R1, R2, R3, R4, R5, R6);
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
+    freePage = R0;
+    multipop(R1, R2, R3, R4, R5, R6);
 
-    if (codePage != -1) then
-        alias memory_free_list_entry R8;
-        memory_free_list_entry = MEMORY_FREE_LIST + physicalPageNum;
-        [memory_free_list_entry] = [memory_free_list_entry] + 1;
-        R0 = physicalPageNum;
-        return;
-    else
-        alias freePage R7;
-        multipush(R1, R2, R3, R4, R5, R6);
-        R1 = GET_FREE_PAGE;
-        call MEMORY_MANAGER;
-        freePage = R0;
-        multipop(R1, R2, R3, R4, R5, R6);
+    multipush(R1, R2, R3, R4, R5, R6, R7);
+    R4 = diskBlock;  //cuz diskBlock is R2
+    R1 = DISK_LOAD;
+    R2 = [SYSTEM_STATUS_TABLE + 1];  //Might cause problems.
+    R3 = freePage;
+    call DEVICE_MANAGER;
+    multipop(R1, R2, R3, R4, R5, R6, R7);
 
-        multipush(R1, R2, R3, R4, R5, R6, R7);
-        R4 = diskBlock;  //cuz diskBlock is R2
-        R1 = DISK_LOAD;
-        R2 = [SYSTEM_STATUS_TABLE + 1];  //Might cause problems.
-        R3 = freePage;
-        call DEVICE_MANAGER;
-        multipop(R1, R2, R3, R4, R5, R6, R7);
-
-        R0 = freePage;
-        return;
-    endif;
+    R0 = freePage;
+    return;
 endif;
 
 

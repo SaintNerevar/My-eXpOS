@@ -19,3 +19,5 @@ load --exhandler $HOME/repos/myexpos/spl/spl_progs/exception_handler.xsm
 load --int=8 $HOME/repos/myexpos/spl/spl_progs/int8.xsm
 load --int=11 $HOME/repos/myexpos/spl/spl_progs/int11.xsm
 load --int=15 $HOME/repos/myexpos/spl/spl_progs/int15.xsm
+load --int=13 $HOME/repos/myexpos/spl/spl_progs/int13.xsm
+load --int=14 $HOME/repos/myexpos/spl/spl_progs/int14.xsm
