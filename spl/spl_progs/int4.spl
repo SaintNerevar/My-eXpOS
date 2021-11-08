@@ -1,0 +1,203 @@
+alias userSP R0;
+alias process_table_entry R1;
+userSP = SP;
+process_table_entry = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+[process_table_entry + 13] = SP;
+SP = [process_table_entry + 11]*512 - 1;
+
+alias physicalPageNum R2;
+alias offset R3;
+alias systemCallNum R4;
+physicalPageNum = [PTBR + 2*((userSP - 5)/512)];
+offset = (userSP - 5) % 512;
+systemCallNum = [physicalPageNum*512 + offset];
+
+[process_table_entry + 9] = systemCallNum;
+
+if (systemCallNum == INT_CREATE) then
+    alias filename R5;
+    alias permission R6;
+
+    physicalPageNum = [PTBR + 2*((userSP - 4)/512)];
+    offset = (userSP - 4) % 512;
+    filename = [physicalPageNum*512 + offset];
+
+    physicalPageNum = [PTBR + 2*((userSP - 3)/512)];
+    offset = (userSP - 3) % 512;
+    permission = [physicalPageNum*512 + offset];
+
+    alias inode_index R7;
+    inode_index = 1;
+
+    // page and offset for return value
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+
+    while (inode_index < MAX_FILE_NUM) do
+        if ([INODE_TABLE + inode_index*16 + 1] == filename) then
+            // File Found so return 0 
+            [physicalPageNum*512 + offset] = 0;
+            [process_table_entry + 9] = 0;
+            SP = userSP;
+            ireturn;
+        endif;
+        inode_index = inode_index + 1;
+    endwhile;
+
+    // File is not found. Create an empty filename
+    inode_index = 1;
+
+    while (inode_index < MAX_FILE_NUM) do
+        if ([INODE_TABLE + inode_index*16 + 1] == -1) then
+            break;
+        endif;
+        inode_index = inode_index + 1;
+    endwhile;
+
+    if (inode_index == MAX_FILE_NUM) then
+        // Inode table full
+        [physicalPageNum*512 + offset] = -1;
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    else
+        // Create an empty file entry in inode table
+        multipush(R2, R3);
+        R1 = -1;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R3 = inode_index;
+        R4 = filename;
+        R5 = permission;
+        call DEVICE_MANAGER;
+        multipop(R2, R3);
+
+        [physicalPageNum*512 + offset] = 0;
+    endif;
+endif;
+
+if (systemCallNum == INT_DELETE) then
+    alias filename R5;
+
+    physicalPageNum = [PTBR + 2*((userSP - 4)/512)];
+    offset = (userSP - 4) % 512;
+    filename = [physicalPageNum*512 + offset];
+
+    alias inode_index R6;
+    inode_index = 1;
+
+    // page and offset for return value
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+
+    while (inode_index < MAX_FILE_NUM) do
+        if ([INODE_TABLE + inode_index*16 + 1] == filename) then
+            break;
+        endif;
+        inode_index = inode_index + 1;
+    endwhile;
+
+    if (inode_index == MAX_FILE_NUM) then
+        // FIle not found
+        [physicalPageNum*512 + offset] = 0;
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    endif;
+
+    // FIle found
+    alias inode_table_entry R7;
+    inode_table_entry = INODE_TABLE + inode_index*16;
+    if ([inode_table_entry] != DATA
+        || ([inode_table_entry + 4] == EXCLUSIVE
+            && [process_table_entry + 3] != ROOT
+            && [process_table_entry + 3] != [inode_table_entry + 3]
+        )
+    ) then
+        [physicalPageNum*512 + offset] = -1;
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    endif;
+
+    // call acquire inode
+    alias return_value R8;
+    multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+    R1 = ACQUIRE_INODE;
+    R2 = inode_index;
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    return_value = R0;
+    multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+
+    if (return_value == -1) then
+        // File has been deleted already
+        [physicalPageNum*512 + offset] = 0;
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    endif;
+
+    // check if file is open
+    if ([FILE_STATUS_TABLE + inode_index*4 + 1] != -1) then
+        // File is open. Release inode and Return -2
+        multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+        R1 = RELEASE_INODE;
+        R2 = inode_index;
+        R3 = [SYSTEM_STATUS_TABLE + 1];
+        call RESOURCE_MANAGER;
+        multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+
+        [physicalPageNum*512 + offset] = -2;
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    endif;
+
+    // Check each block if its' dirty in buffer table and reset
+    alias counter R8;
+    counter = 8;
+
+    while (counter < 12 && [inode_table_entry + counter] != -1) do
+        alias block R9;
+        block = [inode_table_entry + counter];
+        if ([BUFFER_TABLE + 4*(block % 4)] == block) then
+            [BUFFER_TABLE + 4*(block % 4) + 1] = 0;
+        endif;
+
+        multipush(R1, R2, R3, R4, R5, R6, R7, R8, R9);
+        R1 = RELEASE_BLOCK;
+        R2 = block;
+        call MEMORY_MANAGER;
+        multipop(R1, R2, R3, R4, R5, R6, R7, R8, R9);
+        counter = counter + 1; 
+    endwhile;
+
+    // Invalidate the inode table entry
+    counter = 0;
+    while (counter < 16) do
+        [inode_table_entry + counter] = -1;
+        counter = counter + 1;
+    endwhile;
+
+    // Invalidate root file entry
+    [ROOT_FILE + inode_index*8] = -1;
+    [ROOT_FILE + inode_index*8 + 1] = -1;
+    [ROOT_FILE + inode_index*8 + 2] = -1;
+    [ROOT_FILE + inode_index*8 + 3] = -1;
+    [ROOT_FILE + inode_index*8 + 4] = -1;
+
+    // Release Inode
+    multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+    R1 = RELEASE_INODE;
+    R2 = inode_index;
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+
+    [physicalPageNum*512 + offset] = 0;
+endif;
+
+[process_table_entry + 9] = 0;
+SP = userSP;
+ireturn;

@@ -21,3 +21,4 @@ load --int=11 $HOME/repos/myexpos/spl/spl_progs/int11.xsm
 load --int=15 $HOME/repos/myexpos/spl/spl_progs/int15.xsm
 load --int=13 $HOME/repos/myexpos/spl/spl_progs/int13.xsm
 load --int=14 $HOME/repos/myexpos/spl/spl_progs/int14.xsm
+load --int=4 $HOME/repos/myexpos/spl/spl_progs/int4.xsm
