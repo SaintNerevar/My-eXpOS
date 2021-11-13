@@ -22,3 +22,5 @@ load --int=15 $HOME/repos/myexpos/spl/spl_progs/int15.xsm
 load --int=13 $HOME/repos/myexpos/spl/spl_progs/int13.xsm
 load --int=14 $HOME/repos/myexpos/spl/spl_progs/int14.xsm
 load --int=4 $HOME/repos/myexpos/spl/spl_progs/int4.xsm
+load --int=5 $HOME/repos/myexpos/spl/spl_progs/int5.xsm
+load --module 3 $HOME/repos/myexpos/spl/spl_progs/file_manager.xsm

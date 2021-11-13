@@ -54,6 +54,10 @@ loadi(5, 18);
 loadi(6, 19);
 loadi(7, 20);
 
+//INT 5 (OPEN, CLOSE)
+loadi(12, 25);
+loadi(13, 26);
+
 //INT 6 (READ)
 loadi(14, 27);
 loadi(15, 28);
@@ -71,6 +75,10 @@ loadi(40, 53);
 loadi(41, 54);
 [TERMINAL_STATUS_TABLE] = 0;
 [DISK_STATUS_TABLE] = 0;
+
+//File Manager
+loadi(46, 59);
+loadi(47, 60);
 
 //Device Manager Module
 loadi(48, 61);
@@ -199,6 +207,16 @@ while (counter < MAX_BUFFER) do
     [BUFFER_TABLE + 4*counter + 1] = 0;
     [BUFFER_TABLE + 4*counter + 2] = -1;
     counter = counter + 1; 
+endwhile;
+
+//Initialize Open File Table
+counter = 0;
+while (counter < MAX_OPENFILE_NUM) do
+    [OPEN_FILE_TABLE + 4*counter] = -1;
+    [OPEN_FILE_TABLE + 4*counter + 1] = -1;
+    [OPEN_FILE_TABLE + 4*counter + 2] = 0;
+    [OPEN_FILE_TABLE + 4*counter + 3] = -1;
+    counter = counter + 1;
 endwhile;
 
 [SYSTEM_STATUS_TABLE + 3] = 0;

@@ -1,0 +1,98 @@
+alias userSP R0;
+alias process_table_entry R1;
+userSP = SP;
+process_table_entry = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+[process_table_entry + 13] = SP;
+SP = [process_table_entry + 11]*512 - 1;
+
+alias physicalPageNum R2;
+alias offset R3;
+alias systemCallNum R4;
+physicalPageNum = [PTBR + 2*((userSP - 5)/512)];
+offset = (userSP - 5) % 512;
+systemCallNum = [physicalPageNum*512 + offset];
+
+[process_table_entry + 9] = systemCallNum;
+
+if (systemCallNum == INT_OPEN) then
+    alias filename R5;
+    physicalPageNum = [PTBR + 2*((userSP - 4)/512)];
+    offset = (userSP - 4) % 512;
+    filename = [physicalPageNum*512 + offset];
+
+    alias pprt R6;
+    pprt = [process_table_entry + 11]*512 + 496;
+
+    alias FD R7;
+    FD = 0;
+    // Find a free slot in per process resource table
+    while (FD < 8 && [pprt + 2*FD] != -1) do
+        FD = FD + 1;
+    endwhile;
+
+    if (FD >= 8) then
+        // Resources are full
+        physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+        offset = (userSP - 1) % 512;
+        [physicalPageNum*512 + offset] = -3;
+    else
+        alias return_value R8;
+        multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+        R1 = OPEN;
+        R2 = filename;
+        call FILE_MANAGER;
+        return_value = R0;
+        multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+
+        // File not found or is an executable -> -1
+        // Open File table Full -> -2
+        if (return_value == -1 || return_value == -2) then
+            physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+            offset = (userSP - 1) % 512;
+            [physicalPageNum*512 + offset] = return_value;
+        else
+            // Return per process table index in case of success
+            [pprt + 2*FD] = FILE;
+            [pprt + 2*FD + 1] = return_value;
+
+            physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+            offset = (userSP - 1) % 512;
+            [physicalPageNum*512 + offset] = FD;
+        endif;
+    endif;
+endif;
+
+if (systemCallNum == INT_CLOSE) then
+    alias FD R5;
+    physicalPageNum = [PTBR + 2*((userSP - 4)/512)];
+    offset = (userSP - 4) % 512;
+    FD = [physicalPageNum*512 + offset];
+
+    alias pprt R6;
+    pprt = [process_table_entry + 11]*512 + 496;
+
+    if (FD < 0 || FD >= 8 || [pprt + 2*FD] != FILE) then
+        // Resource is invalid or is not a file
+        physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+        offset = (userSP - 1) % 512;
+        [physicalPageNum*512 + offset] = -1;
+    else
+        multipush(R0, R1, R2, R3, R4, R5, R6);
+        R1 = CLOSE;
+        R2 = [pprt + 2*FD + 1];
+        call FILE_MANAGER;
+        multipop(R0, R1, R2, R3, R4, R5, R6);
+
+        [pprt + 2*FD] = -1;
+        [pprt +2*FD + 1] = -1;
+
+        physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+        offset = (userSP - 1) % 512;
+        [physicalPageNum*512 + offset] = 0;
+    endif;
+endif;
+
+[process_table_entry + 9] = 0;
+SP = userSP;
+ireturn;

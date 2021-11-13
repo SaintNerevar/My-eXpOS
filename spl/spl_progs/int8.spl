@@ -103,6 +103,11 @@ else
             [SEMAPHORE_TABLE + 4*[pprt + 2*counter + 1] + 1]
                 = [SEMAPHORE_TABLE + 4*[pprt + 2*counter + 1] + 1] + 1;
         endif;
+
+        if ([pprt + 2*counter] == FILE) then
+            [OPEN_FILE_TABLE + 4*[pprt + 2*counter + 1] + 1]
+                = [OPEN_FILE_TABLE + 4*[pprt + 2*counter + 1] + 1] + 1;
+        endif;
         counter = counter + 1;
     endwhile;
 
