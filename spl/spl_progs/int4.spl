@@ -63,14 +63,14 @@ if (systemCallNum == INT_CREATE) then
         ireturn;
     else
         // Create an empty file entry in inode table
-        multipush(R2, R3);
+        multipush(R0, R1, R2, R3);
         R1 = -1;
         R2 = [SYSTEM_STATUS_TABLE + 1];
         R3 = inode_index;
         R4 = filename;
         R5 = permission;
         call DEVICE_MANAGER;
-        multipop(R2, R3);
+        multipop(R0, R1, R2, R3);
 
         [physicalPageNum*512 + offset] = 0;
     endif;

@@ -122,7 +122,7 @@ if (functionNum == CLOSE) then
     return;
 endif;
 
-if (functionNum == BUFFERED_READ) then
+if (functionNum == BUFFERED_READ || functionNum == BUFFERED_WRITE) then
     alias diskBlock R2;
     alias offset R3;
     alias wordAddress R4;
@@ -161,8 +161,15 @@ if (functionNum == BUFFERED_READ) then
 
         [BUFFER_TABLE + 4*buffer] = diskBlock;
     endif;
-    breakpoint;
-    [wordAddress] = [(71 + buffer)*512 + offset];
+
+    if (functionNum == BUFFERED_READ) then
+        [wordAddress] = [(71 + buffer)*512 + offset];
+    else
+        alias word R4; // This is actually the word itself in the case of write
+        [(71 + buffer)*512 + offset] = word; 
+        // Set buffer as dirty
+        [BUFFER_TABLE + 4*buffer + 1] = 1;
+    endif;
 
     multipush(R1, R2, R3, R4, R5);
     R1 = RELEASE_BUFFER;

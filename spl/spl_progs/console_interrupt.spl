@@ -1,4 +1,3 @@
-breakpoint;
 //Change from user to kernel stack and save register context
 // WARNING!!! DO NOT CHANGE OR ALIAS REGISTERS BEFORE BACKUP!!
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
@@ -22,5 +21,4 @@ restore;
 // CAUTION!!! USING REGISTER ALIASES AFTER RESTORE MAY LEAD TO BUGS!!
 SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;   //Set Mode Flag to 0
-breakpoint;
 ireturn;

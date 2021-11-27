@@ -8,7 +8,6 @@ SP = [process_table_entry + 11]*512 - 1;
 
 alias physicalPageNum R2;
 alias offset R3;
-alias systemCallNum R4;
 
 [process_table_entry + 9] = INT_15;
 
@@ -22,6 +21,24 @@ if ([SYSTEM_STATUS_TABLE + 1] != 1 || [process_table_entry + 3] != 1) then
     SP = userSP;
     ireturn;
 endif;
+
+
+alias buffer R4;
+buffer = 0;
+while (buffer < MAX_BUFFER) do
+    if ([BUFFER_TABLE + 4*buffer] != -1 
+        && [BUFFER_TABLE + 4*buffer + 1] == 1
+    ) then
+        multipush(R0, R1, R2, R3, R4);
+        R1 = DISK_STORE;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R3 = 71 + buffer;
+        R4 = [BUFFER_TABLE + 4*buffer];
+        call DEVICE_MANAGER;
+        multipop(R0, R1, R2, R3, R4);
+    endif;
+    buffer = buffer + 1;
+endwhile;
 
 // Commit changes in the Inode and User table to disk
 multipush(R0, R1, R2, R3, R4);
@@ -58,4 +75,5 @@ R4 = 2;
 call DEVICE_MANAGER;
 multipop(R0, R1, R2, R3, R4);
 
+breakpoint;
 halt;

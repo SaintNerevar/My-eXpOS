@@ -27,7 +27,6 @@ if (functionNum == GET_FREE_PAGE) then
         endif;
         pageNum = pageNum + 1;
     endwhile;
-    breakpoint;
     return;
 endif;
 
@@ -51,7 +50,6 @@ if (functionNum == RELEASE_PAGE) then
         endif;
         currentPID = currentPID + 1;
     endwhile;
-    breakpoint;
     return;
 endif;
 
@@ -126,4 +124,23 @@ if (functionNum == RELEASE_BLOCK) then
 
     [DISK_FREE_LIST + diskBlock] = 0;
     return; 
+endif;
+
+if (functionNum == GET_FREE_BLOCK) then
+    breakpoint;
+    alias diskBlock R2;
+    diskBlock = DISK_FREE_AREA;
+
+    while (diskBlock < DISK_SWAP_AREA && [DISK_FREE_LIST + diskBlock] != 0) do
+        diskBlock = diskBlock + 1;
+    endwhile;
+
+    if (diskBlock >= DISK_SWAP_AREA) then
+        R0 = -1;
+    else
+        [DISK_FREE_LIST + diskBlock] = 1;
+        R0 = diskBlock;
+    endif;
+
+    return;
 endif;
