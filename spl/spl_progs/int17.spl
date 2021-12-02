@@ -1,0 +1,81 @@
+alias userSP R0;
+alias process_table_entry R1;
+userSP = SP;
+process_table_entry = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+[process_table_entry + 13] = SP;
+SP = [process_table_entry + 11]*512 - 1;
+
+[process_table_entry + 9] = INT_LOGIN;
+
+alias physicalPageNum R2;
+alias offset R3;
+alias username R4;
+alias password R5;
+
+if ([SYSTEM_STATUS_TABLE + 1] != 1) then
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = -2;
+
+    [process_table_entry + 9] = 0;
+    SP = userSP;
+    ireturn;
+endif;
+
+physicalPageNum = [PTBR + 2*((userSP - 4)/512)];
+offset = (userSP - 4) % 512;
+username = [physicalPageNum*512 + offset];
+
+physicalPageNum = [PTBR + 2*((userSP - 3)/512)];
+offset = (userSP - 3) % 512;
+password = [physicalPageNum*512 + offset];
+
+alias userid R6;
+userid = 0;
+while (userid < MAX_USER_NUM && [USER_TABLE + 2*userid] != username) do
+    userid = userid + 1;
+endwhile;
+
+if (userid == MAX_USER_NUM) then
+    // Username invalid
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = -1;
+
+    [process_table_entry + 9] = 0;
+    SP = userSP;
+    ireturn;
+endif;
+
+encrypt password;
+if ([USER_TABLE + 2*userid + 1] != password) then
+    // Password invalid
+    physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+    offset = (userSP - 1) % 512;
+    [physicalPageNum*512 + offset] = -1;
+
+    [process_table_entry + 9] = 0;
+    SP = userSP;
+    ireturn;
+endif;
+
+[PROCESS_TABLE + 2*16 + 3] = userid;
+[PROCESS_TABLE + 2*16 + 4] = CREATED;
+
+[process_table_entry + 4] = WAIT_PROCESS;
+[process_table_entry + 5] = 2;
+
+[SYSTEM_STATUS_TABLE] = userid;
+
+multipush(R0, R1, R2, R3);
+call SCHEDULER;
+multipop(R0, R1, R2, R3);
+
+physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+offset = (userSP - 1) % 512;
+[physicalPageNum*512 + offset] = 0;
+
+[process_table_entry + 9] = 0;
+SP = userSP;
+ireturn;

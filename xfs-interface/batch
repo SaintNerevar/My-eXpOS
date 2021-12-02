@@ -4,7 +4,8 @@ load --int=timer $HOME/repos/myexpos/spl/spl_progs/sample_timer.xsm
 load --int=7 $HOME/repos/myexpos/spl/spl_progs/int7.xsm
 load --int=9 $HOME/repos/myexpos/spl/spl_progs/int9.xsm
 load --int=10 $HOME/repos/myexpos/spl/spl_progs/sample_int10.xsm
-load --init $HOME/repos/myexpos/expl/samples/shell2.xsm
+load --init $HOME/repos/myexpos/expl/samples/login.xsm
+load --shell $HOME/repos/myexpos/expl/samples/shell.xsm
 load --idle $HOME/repos/myexpos/expl/samples/idle.xsm
 load --module 7 $HOME/repos/myexpos/spl/spl_progs/boot_module.xsm
 load --module 5 $HOME/repos/myexpos/spl/spl_progs/scheduler.xsm
@@ -18,9 +19,12 @@ load --int=6 $HOME/repos/myexpos/spl/spl_progs/int6.xsm
 load --exhandler $HOME/repos/myexpos/spl/spl_progs/exception_handler.xsm
 load --int=8 $HOME/repos/myexpos/spl/spl_progs/int8.xsm
 load --int=11 $HOME/repos/myexpos/spl/spl_progs/int11.xsm
+load --int=12 $HOME/repos/myexpos/spl/spl_progs/int12.xsm
 load --int=15 $HOME/repos/myexpos/spl/spl_progs/int15.xsm
 load --int=13 $HOME/repos/myexpos/spl/spl_progs/int13.xsm
 load --int=14 $HOME/repos/myexpos/spl/spl_progs/int14.xsm
+load --int=16 $HOME/repos/myexpos/spl/spl_progs/int16.xsm
+load --int=17 $HOME/repos/myexpos/spl/spl_progs/int17.xsm
 load --int=4 $HOME/repos/myexpos/spl/spl_progs/int4.xsm
 load --int=5 $HOME/repos/myexpos/spl/spl_progs/int5.xsm
 load --module 3 $HOME/repos/myexpos/spl/spl_progs/file_manager.xsm

@@ -6,9 +6,9 @@ process_table_entry = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
 [process_table_entry + 13] = SP;
 SP = [process_table_entry + 11]*512 - 1;
 
-[process_table_entry + 9] = INT_15;
+[process_table_entry + 9] = INT_SHUTDOWN;
 
-if ([SYSTEM_STATUS_TABLE + 1] != 1 || [process_table_entry + 3] != 1) then
+if ([SYSTEM_STATUS_TABLE + 1] != 2 || [process_table_entry + 3] != ROOT) then
     // If the calling process is not the Root Shell, return -1
     alias physicalPageNum R2;
     alias offset R3;

@@ -1,0 +1,210 @@
+alias userSP R0;
+alias process_table_entry R1;
+userSP = SP;
+process_table_entry = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+[process_table_entry + 13] = SP;
+SP = [process_table_entry + 11]*512 - 1;
+
+alias physicalPageNum R2;
+alias offset R3;
+alias systemCallNum R4;
+physicalPageNum = [PTBR + 2*((userSP - 5)/512)];
+offset = (userSP - 5) % 512;
+systemCallNum = [physicalPageNum*512 + offset];
+
+[process_table_entry + 9] = systemCallNum;
+
+alias arg1 R5;
+physicalPageNum = [PTBR + 2*((userSP - 4)/512)];
+offset = (userSP - 4) % 512;
+arg1 = [physicalPageNum*512 + offset];
+
+alias arg2 R6;
+physicalPageNum = [PTBR + 2*((userSP - 3)/512)];
+offset = (userSP - 3) % 512;
+arg2 = [physicalPageNum*512 + offset];
+
+alias retval_addr R10;
+physicalPageNum = [PTBR + 2*((userSP - 1)/512)];
+offset = (userSP - 1) % 512;
+retval_addr = physicalPageNum*512 + offset;
+
+if (systemCallNum == INT_NEWUSR) then
+    if([process_table_entry + 3] != ROOT || [SYSTEM_STATUS_TABLE + 1] != 2) then
+        // Current process is not root shell
+        [retval_addr] = -2;
+
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    endif;
+
+    alias username R5;
+    alias password R6;
+    alias userid R7;
+    userid = 0;
+    while (userid < MAX_USER_NUM 
+           && [USER_TABLE + 2*userid] != username
+    ) do
+        userid = userid + 1;
+    endwhile;
+
+    if (userid != MAX_FILE_NUM && [USER_TABLE + 2*userid] == username) then
+        // User already exists
+        [retval_addr] = -1;
+    else
+        userid = 0;
+        while (userid < MAX_USER_NUM 
+            && [USER_TABLE + 2*userid] != -1
+        ) do
+            userid = userid + 1;
+        endwhile;
+
+        if (userid == MAX_USER_NUM) then
+            [retval_addr] = -3;
+        else
+            encrypt password;
+            [USER_TABLE + 2*userid] = username;
+            [USER_TABLE + 2*userid + 1] = password;
+
+            [retval_addr] = 0;
+        endif;
+    endif;
+
+    [process_table_entry + 9] = 0;
+    SP = userSP;
+    ireturn;
+endif;
+
+if (systemCallNum == INT_REMUSR) then
+    alias username R5;
+
+    if([process_table_entry + 3] != ROOT 
+      || [SYSTEM_STATUS_TABLE + 1] != 2
+      || username == "root"
+      || username == "kernel"
+    ) then
+        [retval_addr] = -2;
+
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    endif;
+
+    alias userid R7;
+    userid = 0;
+    while (userid < MAX_USER_NUM 
+           && [USER_TABLE + 2*userid] != username
+    ) do
+        userid = userid + 1;
+    endwhile;
+
+    if (userid == MAX_USER_NUM) then
+        // User not found
+        [retval_addr] = -1;
+
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    endif;
+
+    alias FID R8;
+    FID = 0;
+    while (FID < MAX_FILE_NUM && [ROOT_FILE + 8*FID + 3] != username) do
+        FID = FID + 1;
+    endwhile;
+
+    if (FID == MAX_FILE_NUM) then
+        // No files opened by user. Can be removed
+        [USER_TABLE + 2*userid] = -1;
+        [USER_TABLE + 2*userid + 1] = -1;
+
+        [retval_addr] = 0;
+    else
+        // Files owned by user present in disk
+        [retval_addr] = -3;
+    endif;
+
+    [process_table_entry + 9] = 0;
+    SP = userSP;
+    ireturn;
+endif;
+
+if (systemCallNum == INT_SETPWD) then
+   if([SYSTEM_STATUS_TABLE + 1] != 2) then
+        // Current process is not shell
+        [retval_addr] = -1;
+
+        [process_table_entry + 9] = 0;
+        SP = userSP;
+        ireturn;
+    endif;
+
+    alias username R5;
+    alias password R6;
+    alias userid R7;
+    userid = 0;
+    while (userid < MAX_USER_NUM 
+           && [USER_TABLE + 2*userid] != username
+    ) do
+        userid = userid + 1;
+    endwhile;
+
+    if (userid == MAX_USER_NUM) then
+        // User not found
+        [retval_addr] = -2;
+    else
+        if ([process_table_entry + 3] != userid 
+            && [process_table_entry + 3] != ROOT
+        ) then
+            // Found user is neither root nor owner of current shell
+            [retval_addr] = -1;
+        else
+            encrypt password;
+            [USER_TABLE + 2*userid + 1] = password;
+
+            [retval_addr] = 0;
+        endif;
+    endif;
+
+    [process_table_entry + 9] = 0;
+    SP = userSP;
+    ireturn;
+endif;
+
+if (systemCallNum == INT_GETUNAME) then
+    alias userid R5;
+
+    if (userid < 0 || userid > 15 || [USER_TABLE + 2*userid] == -1) then      
+        [retval_addr] = -1;
+    else
+        [retval_addr] = [USER_TABLE + 2*userid];
+    endif;
+
+    [process_table_entry + 9] = 0;
+    SP = userSP;
+    ireturn;
+endif;
+
+if (systemCallNum == INT_GETUID) then
+    alias username R5;
+
+    alias userid R7;
+    userid = 0;
+    while (userid < MAX_USER_NUM 
+           && [USER_TABLE + 2*userid] != username
+    ) do
+        userid = userid + 1;
+    endwhile;
+
+    if (userid == MAX_USER_NUM) then
+        [retval_addr] = -1;
+    else
+        [retval_addr] = userid;
+    endif;
+
+    [process_table_entry + 9] = 0;
+    SP = userSP;
+    ireturn;
+endif;

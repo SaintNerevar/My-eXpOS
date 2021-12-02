@@ -1,0 +1,22 @@
+int main() {
+    decl
+        int a, temp, fd;
+        str name, word;
+    enddecl
+    begin
+        temp = exposcall("Read", -1, name);
+        fd = exposcall("Open", name);
+        if (temp < 0) then
+            temp = exposcall("Write", -2, "Failed");
+        else
+            temp = exposcall("Read", fd, word);
+            while (temp != -2) do
+                temp = exposcall("Write", -2, word);
+                temp = exposcall("Read", fd, word);
+            endwhile;
+
+            temp = exposcall("Close", name);
+        endif;
+        return 0;
+    end
+}

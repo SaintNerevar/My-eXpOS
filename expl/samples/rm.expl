@@ -1,0 +1,22 @@
+int main() {
+    decl
+        int a, temp, fd;
+        str name;
+    enddecl
+    begin
+        temp = exposcall("Read", -1, name);
+        temp = exposcall("Delete", name);
+
+        if (temp == 0) then
+            temp = exposcall("Write", -2, "Success");
+        else
+            if (temp == -1) then
+                temp = exposcall("Write", -2, "Permission");
+                temp = exposcall("Write", -2, "Denied");
+            else
+                temp = exposcall("Write", -2, "File open");
+            endif;
+        endif;
+        return 0;
+    end
+}

@@ -6,7 +6,7 @@ loadi(55, 68);
 loadi(69, 11);
 loadi(70, 12);
 
-SP = 82*512 - 1;
+SP = 76*512 - 1;
 call BOOT_MODULE;
 
 PTBR = PAGE_TABLE_BASE;
@@ -30,8 +30,8 @@ PTLR = 10;
 //Code
 [PTBR + 8] = 69;
 [PTBR + 9] = "0100";
-[PTBR + 10] = 70;
-[PTBR + 11] = "0100";
+[PTBR + 10] = -1;
+[PTBR + 11] = "0000";
 [PTBR + 12] = -1;
 [PTBR + 13] = "0000";
 [PTBR + 14] = -1;
@@ -39,7 +39,7 @@ PTLR = 10;
 
 
 //Stack
-[PTBR + 16] = 81; 
+[PTBR + 16] = 70; 
 [PTBR + 17] = "0110";
 [PTBR + 18] = -1;
 [PTBR + 19] = "0000";
@@ -48,7 +48,7 @@ PTLR = 10;
 //Process Table Entry IDLE
 [PROCESS_TABLE + 1] = 0;
 [PROCESS_TABLE + 4] = RUNNING;
-[PROCESS_TABLE + 11] = 82;
+[PROCESS_TABLE + 11] = 76;
 [PROCESS_TABLE + 12] = 0;
 [PROCESS_TABLE + 13] = 8*512;
 [PROCESS_TABLE + 14] = PAGE_TABLE_BASE;
@@ -56,6 +56,6 @@ PTLR = 10;
 
 [SYSTEM_STATUS_TABLE + 1] = 0; //PID of currently executing process
 
-[81*512] = [69*512 + 1]; //Second word in XEXE header
+[70*512] = [69*512 + 1]; //Second word in XEXE header
 SP = 8*512;
 ireturn;

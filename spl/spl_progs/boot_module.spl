@@ -6,6 +6,10 @@ loadi(64, 14);
 loadi(65, 7);
 loadi(66, 8);
 
+//Shell code
+loadi(67, 9);
+loadi(68, 10);
+
 //INT 4
 loadi(10, 23);
 loadi(11, 24);
@@ -26,6 +30,10 @@ loadi(23, 36);
 loadi(24, 37);
 loadi(25, 38);
 
+// INT 12
+loadi(26, 39);
+loadi(27, 40);
+
 //INT 13
 loadi(28, 41);
 loadi(29, 42);
@@ -37,6 +45,14 @@ loadi(31, 44);
 //INT 15
 loadi(32, 45);
 loadi(33, 46);
+
+// INT 16
+loadi(34, 47);
+loadi(35, 48);
+
+// INT 17
+loadi(36, 49);
+loadi(37, 50);
 
 //Exception Handler
 loadi(2, 15);
@@ -104,7 +120,7 @@ loadi(61, 2);
 
 PTBR = PAGE_TABLE_BASE + 20;
 
-// INIT
+// INIT/LOGIN
 //Shared Library
 [PTBR + 0] = 63;
 [PTBR + 1] = "0100";
@@ -113,16 +129,63 @@ PTBR = PAGE_TABLE_BASE + 20;
 
 
 //Heap
-[PTBR + 4] = 78;
-[PTBR + 5] = "0110";
-[PTBR + 6] = 79;
-[PTBR + 7] = "0110";
+[PTBR + 4] = -1;
+[PTBR + 5] = "0000";
+[PTBR + 6] = -1;
+[PTBR + 7] = "0000";
 
 
 //Code
 [PTBR + 8] = 65;
 [PTBR + 9] = "0100";
-[PTBR + 10] = 66;
+[PTBR + 10] = -1;
+[PTBR + 11] = "0000";
+[PTBR + 12] = -1;
+[PTBR + 13] = "0000";
+[PTBR + 14] = -1;
+[PTBR + 15] = "0000";
+
+
+//Stack
+[PTBR + 16] = 66;
+[PTBR + 17] = "0110";
+[PTBR + 18] = -1;
+[PTBR + 19] = "0000";
+
+//Process Table Entry INIT
+alias process_table_entry R0;
+process_table_entry = PROCESS_TABLE + 16;
+[process_table_entry + 1] = 1; //PID of INIT
+[process_table_entry + 3] = 0; // UserID is kernel
+[process_table_entry + 4] = CREATED;
+[process_table_entry + 11] = 77; //User Area Page Number
+[process_table_entry + 12] = 0;
+[process_table_entry + 13] = 8*512;
+[process_table_entry + 14] = PAGE_TABLE_BASE + 20;
+[process_table_entry + 15] = 10;
+[66*512] = [65*512 + 1];
+
+PTBR = PAGE_TABLE_BASE + 40;
+
+// SHELL
+//Shared Library
+[PTBR + 0] = 63;
+[PTBR + 1] = "0100";
+[PTBR + 2] = 64;
+[PTBR + 3] = "0100";
+
+
+//Heap
+[PTBR + 4] = -1;
+[PTBR + 5] = "0000";
+[PTBR + 6] = -1;
+[PTBR + 7] = "0000";
+
+
+//Code
+[PTBR + 8] = 67;
+[PTBR + 9] = "0100";
+[PTBR + 10] = 68;
 [PTBR + 11] = "0100";
 [PTBR + 12] = -1;
 [PTBR + 13] = "0000";
@@ -131,39 +194,43 @@ PTBR = PAGE_TABLE_BASE + 20;
 
 
 //Stack
-[PTBR + 16] = 76; //User Program pages start from 76
+[PTBR + 16] = 78;
 [PTBR + 17] = "0110";
-[PTBR + 18] = 77;
-[PTBR + 19] = "0110";
+[PTBR + 18] = 79;
+[PTBR + 19] = "0000";
 
-//Process Table Entry INIT
-[PROCESS_TABLE + 16 + 1] = 1; //PID of INIT
-[PROCESS_TABLE + 16 + 3] = 1; // UserID is Root
-[PROCESS_TABLE + 16 + 4] = CREATED;
-[PROCESS_TABLE + 16 + 11] = 80; //User Area Page Number
-[PROCESS_TABLE + 16 + 12] = 0;
-[PROCESS_TABLE + 16 + 13] = 8*512;
-[PROCESS_TABLE + 16 + 14] = PAGE_TABLE_BASE + 20;
-[PROCESS_TABLE + 16 + 15] = 10;
-[76*512] = [65*512 + 1];
+//Process Table Entry SHELL
+process_table_entry = PROCESS_TABLE + 32;
+[process_table_entry + 1] = 2; //PID of SHELL
+[process_table_entry + 2] = 1;
+[process_table_entry + 3] = -1;
+[process_table_entry + 4] = TERMINATED;
+[process_table_entry + 11] = 80; //User Area Page Number
+[process_table_entry + 12] = 0;
+[process_table_entry + 13] = 8*512;
+[process_table_entry + 14] = PAGE_TABLE_BASE + 40;
+[process_table_entry + 15] = 10;
+[78*512] = [67*512 + 1];
 
-//per process resource table for INIT
-alias counter R0;
+//per process resource table for SHELL and INIT
+alias counter R1;
 counter = 0;
 while (counter < 16) do
+    [[PROCESS_TABLE + 32 + 11]*512 + 496 + counter] = -1;
     [[PROCESS_TABLE + 16 + 11]*512 + 496 + counter] = -1;
     counter = counter + 1;
 endwhile;
 
-//Disk Map table for INIT
+//Disk Map table for SHELL
 counter = 0;
 while (counter < 10) do
-    [DISK_MAP_TABLE + 10 + counter] = -1;
+    [DISK_MAP_TABLE + 2*10 + counter] = -1;
     counter = counter + 1;
 endwhile;
+[DISK_MAP_TABLE + 2*10 + 4] = 9;
+[DISK_MAP_TABLE + 2*10 + 5] = 10;
 
-alias currentPID R1;
-alias process_table_entry R2;
+alias currentPID R2;
 currentPID = 2;
 
 //Initialize STATE for all other processes
@@ -176,7 +243,7 @@ endwhile;
 //Initialize Memory Free List
 counter = 0;
 while (counter < MAX_MEM_PAGE) do
-    if (counter < 83) then
+    if (counter < 81) then
         [MEMORY_FREE_LIST + counter] = 1;
     else
         [MEMORY_FREE_LIST + counter] = 0;
@@ -186,40 +253,48 @@ endwhile;
 
 //Initialize Semaphore Table
 counter = 0;
+alias semtable_entry R0;
 while (counter < MAX_SEM_COUNT) do
-    [SEMAPHORE_TABLE + 4*counter] = -1;
-    [SEMAPHORE_TABLE + 4*counter + 1] = 0;
+    semtable_entry = SEMAPHORE_TABLE + 4*counter;
+    [semtable_entry] = -1;
+    [semtable_entry + 1] = 0;
     counter = counter + 1; 
 endwhile;
 
 // Initialize File Status Table
 counter = 0;
+alias fst_entry R0;
 while (counter < MAX_FILE_NUM) do
-    [FILE_STATUS_TABLE + 4*counter] = -1;
-    [FILE_STATUS_TABLE + 4*counter + 1] = -1;
+    fst_entry = FILE_STATUS_TABLE + 4*counter;
+    [fst_entry] = -1;
+    [fst_entry + 1] = -1;
     counter = counter + 1;
 endwhile;
 
 // Initialize Buffer Table
 counter = 0;
+alias buffer_table_entry R0;
 while (counter < MAX_BUFFER) do
-    [BUFFER_TABLE + 4*counter] = -1;
-    [BUFFER_TABLE + 4*counter + 1] = 0;
-    [BUFFER_TABLE + 4*counter + 2] = -1;
+    buffer_table_entry = BUFFER_TABLE + 4*counter;
+    [buffer_table_entry] = -1;
+    [buffer_table_entry + 1] = 0;
+    [buffer_table_entry + 2] = -1;
     counter = counter + 1; 
 endwhile;
 
 //Initialize Open File Table
 counter = 0;
+alias oft_entry R0;
 while (counter < MAX_OPENFILE_NUM) do
-    [OPEN_FILE_TABLE + 4*counter] = -1;
-    [OPEN_FILE_TABLE + 4*counter + 1] = -1;
-    [OPEN_FILE_TABLE + 4*counter + 2] = 0;
-    [OPEN_FILE_TABLE + 4*counter + 3] = -1;
+    oft_entry = OPEN_FILE_TABLE + 4*counter;
+    [oft_entry] = -1;
+    [oft_entry + 1] = -1;
+    [oft_entry + 2] = 0;
+    [oft_entry + 3] = -1;
     counter = counter + 1;
 endwhile;
 
 [SYSTEM_STATUS_TABLE + 3] = 0;
-[SYSTEM_STATUS_TABLE + 2] = 45;
+[SYSTEM_STATUS_TABLE + 2] = 47;
 
 return;

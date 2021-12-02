@@ -91,7 +91,7 @@ if (functionNum == OPEN) then
     call RESOURCE_MANAGER;
     multipop(R1, R2, R3, R4, R5, R6);
 
-    R0 = 0;
+    R0 = open_filetable_index;
     return;
 endif;
 

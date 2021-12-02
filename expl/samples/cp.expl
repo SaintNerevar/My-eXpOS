@@ -1,0 +1,42 @@
+int main() {
+    decl
+        int temp, fd1, fd2;
+        str name1, name2, word;
+    enddecl
+    begin
+        temp = exposcall("Read", -1, name1);
+        temp = exposcall("Read", -1, name2);
+
+        if (name1 == name2) then
+            temp = exposcall("Write", -2, "Failed");
+        else
+            fd1 = exposcall("Open", name1);
+            if (fd1 < 0) then
+                temp = exposcall("Write", -2, "Failed");
+            else
+                temp = exposcall("Create", name2, 0);
+                if (temp == -1) then
+                    temp = exposcall("Write", -2, "Disk Full");
+                    temp = exposcall("Close", fd1);
+                else
+                    fd2 = exposcall("Open", name2);
+                    breakpoint;
+                    if (fd2 < 0) then
+                        temp = exposcall("Write", -2, "Failed");
+                        temp = exposcall("Close", fd1);
+                    else
+                        temp = exposcall("Read", fd1, word);
+                        while (temp != -2) do
+                            temp = exposcall("Write", fd2, word);
+                            temp = exposcall("Read", fd1, word);
+                        endwhile;
+
+                        temp = exposcall("Close", fd1);
+                        temp = exposcall("Close", fd2);
+                    endif;
+                endif;
+            endif;
+        endif;
+        return 0;
+    end
+}
