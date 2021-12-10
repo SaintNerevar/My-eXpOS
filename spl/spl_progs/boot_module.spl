@@ -104,6 +104,10 @@ loadi(49, 62);
 loadi(42, 55);
 loadi(43, 56);
 
+// Pager Module
+loadi(52, 65);
+loadi(53, 66);
+
 //Memory Manager
 loadi(44, 57);
 loadi(45, 58);
@@ -155,12 +159,14 @@ PTBR = PAGE_TABLE_BASE + 20;
 //Process Table Entry INIT
 alias process_table_entry R0;
 process_table_entry = PROCESS_TABLE + 16;
+[process_table_entry] = 0;
 [process_table_entry + 1] = 1; //PID of INIT
 [process_table_entry + 3] = 0; // UserID is kernel
 [process_table_entry + 4] = CREATED;
+[process_table_entry + 6] = 0;
 [process_table_entry + 11] = 77; //User Area Page Number
 [process_table_entry + 12] = 0;
-[process_table_entry + 13] = 8*512;
+[process_table_entry + 13] = 4096;
 [process_table_entry + 14] = PAGE_TABLE_BASE + 20;
 [process_table_entry + 15] = 10;
 [66*512] = [65*512 + 1];
@@ -197,17 +203,19 @@ PTBR = PAGE_TABLE_BASE + 40;
 [PTBR + 16] = 78;
 [PTBR + 17] = "0110";
 [PTBR + 18] = 79;
-[PTBR + 19] = "0000";
+[PTBR + 19] = "0110";
 
 //Process Table Entry SHELL
 process_table_entry = PROCESS_TABLE + 32;
+[process_table_entry] = 0;
 [process_table_entry + 1] = 2; //PID of SHELL
 [process_table_entry + 2] = 1;
 [process_table_entry + 3] = -1;
 [process_table_entry + 4] = TERMINATED;
+[process_table_entry + 6] = 0;
 [process_table_entry + 11] = 80; //User Area Page Number
 [process_table_entry + 12] = 0;
-[process_table_entry + 13] = 8*512;
+[process_table_entry + 13] = 4096;
 [process_table_entry + 14] = PAGE_TABLE_BASE + 40;
 [process_table_entry + 15] = 10;
 [78*512] = [67*512 + 1];
@@ -216,26 +224,27 @@ process_table_entry = PROCESS_TABLE + 32;
 alias counter R1;
 counter = 0;
 while (counter < 16) do
-    [[PROCESS_TABLE + 32 + 11]*512 + 496 + counter] = -1;
-    [[PROCESS_TABLE + 16 + 11]*512 + 496 + counter] = -1;
+    [[PROCESS_TABLE + 43]*512 + 496 + counter] = -1;
+    [[PROCESS_TABLE + 27]*512 + 496 + counter] = -1;
     counter = counter + 1;
 endwhile;
 
 //Disk Map table for SHELL
 counter = 0;
 while (counter < 10) do
-    [DISK_MAP_TABLE + 2*10 + counter] = -1;
+    [DISK_MAP_TABLE + 20 + counter] = -1;
     counter = counter + 1;
 endwhile;
-[DISK_MAP_TABLE + 2*10 + 4] = 9;
-[DISK_MAP_TABLE + 2*10 + 5] = 10;
+[DISK_MAP_TABLE + 24] = 9;
+[DISK_MAP_TABLE + 25] = 10;
 
 alias currentPID R2;
 currentPID = 2;
 
-//Initialize STATE for all other processes
-while (currentPID < 16) do
+//Initialize STATE and TICK for all other processes
+while (currentPID < 15) do
     process_table_entry = PROCESS_TABLE + currentPID*16;
+    [process_table_entry] = 0;
     [process_table_entry + 4] = TERMINATED;
     currentPID = currentPID + 1;
 endwhile;
@@ -243,7 +252,7 @@ endwhile;
 //Initialize Memory Free List
 counter = 0;
 while (counter < MAX_MEM_PAGE) do
-    if (counter < 81) then
+    if (counter < 83) then
         [MEMORY_FREE_LIST + counter] = 1;
     else
         [MEMORY_FREE_LIST + counter] = 0;
@@ -263,11 +272,8 @@ endwhile;
 
 // Initialize File Status Table
 counter = 0;
-alias fst_entry R0;
-while (counter < MAX_FILE_NUM) do
-    fst_entry = FILE_STATUS_TABLE + 4*counter;
-    [fst_entry] = -1;
-    [fst_entry + 1] = -1;
+while (counter < 4*MAX_FILE_NUM) do
+    [FILE_STATUS_TABLE + counter] = -1;
     counter = counter + 1;
 endwhile;
 
@@ -295,6 +301,8 @@ while (counter < MAX_OPENFILE_NUM) do
 endwhile;
 
 [SYSTEM_STATUS_TABLE + 3] = 0;
-[SYSTEM_STATUS_TABLE + 2] = 47;
+[SYSTEM_STATUS_TABLE + 5] = 0;
+[SYSTEM_STATUS_TABLE + 4] = 0;
+[SYSTEM_STATUS_TABLE + 2] = 45;
 
 return;

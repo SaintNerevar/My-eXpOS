@@ -4,10 +4,10 @@ int main()
         int temp,num;
     enddecl
     begin
-        num=1;
-        while ( num <= 100 ) do
+        num=64;
+        while ( num > 0 ) do
             temp = exposcall ( "Write" , -2, num );
-            num = num + 1;
+            num = num - 1;
         endwhile;
         return 0;
     end

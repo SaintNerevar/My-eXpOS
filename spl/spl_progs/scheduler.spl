@@ -12,19 +12,34 @@ process_table_entry = PROCESS_TABLE + currentPID*16;
 alias newPID R2;
 alias state R3;
 newPID = 0;
-while (currentPID < 15) do
-    currentPID = currentPID + 1;
-    state = [PROCESS_TABLE + currentPID*16 + 4];
-    if (state == CREATED || state == READY) then
-        if (state == CREATED) then
-            BP = [[PROCESS_TABLE + currentPID*16 + 11]*512];
-        endif;
-        newPID = currentPID;
-        break;
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then
+    if ([PROCESS_TABLE + 15*16 + 4] == WAIT_DISK) then
+        // Swapper Daemon blocked. Schedule Idle
+        newPID = 0;
+    else
+        newPID = 15;
     endif;
-endwhile;
+else
+    alias counter R4;
+    counter = 1;
+    while (counter < 15) do
+        currentPID = (currentPID % 14) + 1;
+        state = [PROCESS_TABLE + currentPID*16 + 4];
+        if ((state == CREATED || state == READY)
+            && [PROCESS_TABLE + currentPID*16 + 6] == 0
+        ) then
+            if (state == CREATED) then
+                BP = [[PROCESS_TABLE + currentPID*16 + 11]*512];
+            endif;
+            newPID = currentPID;
+            break;
+        endif;
+        counter = counter + 1;
+    endwhile;
+endif;
 
 process_table_entry = PROCESS_TABLE + newPID*16;
+state = [PROCESS_TABLE + newPID*16 + 4];
 SP = [process_table_entry + 11]*512 + [process_table_entry + 12];
 PTBR = [process_table_entry + 14];
 PTLR = [process_table_entry + 15];

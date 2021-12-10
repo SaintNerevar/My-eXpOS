@@ -173,7 +173,7 @@ if (functionNum == KILL_ALL) then
     alias pid R4;
     pid = 2;
 
-    while (pid < MAX_PROC_NUM) do
+    while (pid < MAX_PROC_NUM-1) do
         if (pid != currentPID 
             && [PROCESS_TABLE + 16*pid + 4] != TERMINATED
         )then

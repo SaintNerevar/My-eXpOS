@@ -127,7 +127,6 @@ if (functionNum == RELEASE_BLOCK) then
 endif;
 
 if (functionNum == GET_FREE_BLOCK) then
-    breakpoint;
     alias diskBlock R2;
     diskBlock = DISK_FREE_AREA;
 
@@ -142,5 +141,22 @@ if (functionNum == GET_FREE_BLOCK) then
         R0 = diskBlock;
     endif;
 
+    return;
+endif;
+
+if (functionNum == GET_SWAP_BLOCK) then
+    alias diskBlock R2;
+    diskBlock = DISK_SWAP_AREA;
+
+    while (diskBlock < DISK_SIZE && [DISK_FREE_LIST + diskBlock] != 0) do
+        diskBlock = diskBlock + 1;
+    endwhile;
+
+    if (diskBlock == DISK_SIZE) then
+        R0 = -1;
+    else
+        [DISK_FREE_LIST + diskBlock] = 1;
+        R0 = diskBlock;
+    endif;
     return;
 endif;

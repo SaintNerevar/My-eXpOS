@@ -1,0 +1,76 @@
+//Change from user to kernel stack and save register context
+// WARNING!!! DO NOT CHANGE OR ALIAS REGISTERS BEFORE BACKUP!!
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11] * 512 - 1;
+backup;
+
+alias currentPID R0;
+alias process_table_entry R1;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+process_table_entry = PROCESS_TABLE + currentPID * 16;
+
+
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then
+    // Swapping initiated
+    if (currentPID == 15 && [SYSTEM_STATUS_TABLE + 5] == SWAP_OUT) then
+        multipush(R0, R1);
+        R1 = SWAP_OUT;
+        call PAGER_MODULE;
+        multipop(R0, R1);
+    else
+        if (currentPID == 15 && [SYSTEM_STATUS_TABLE + 5] == SWAP_IN) then
+            multipush(R0, R1);
+            R1 = SWAP_IN;
+            call PAGER_MODULE;
+            multipop(R0, R1);
+        endif;
+    endif;
+else
+    // Swapping is off
+    // Monitor ticks and mem-free count
+    if ([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+        [SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;
+    else
+        if ([SYSTEM_STATUS_TABLE + 4] != 0) then
+            // There are swapped out processes
+            alias PID R2;
+            PID = 3;
+            while (PID < 15) do
+                if (([PROCESS_TABLE + PID*16 + 4] == READY
+                     ||[PROCESS_TABLE + PID*16 + 4] == CREATED
+                    )   
+                    && [PROCESS_TABLE + PID*16 + 6] == 1
+                    && [PROCESS_TABLE + PID*16] > MAX_TICK
+                ) then
+                    [SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
+                    break;
+                endif;
+                PID = PID + 1;
+            endwhile;
+
+            if ([SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then
+                [SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
+            endif;
+        endif;
+    endif;
+endif;
+
+[process_table_entry + 4] = READY;
+
+//Go through all the live processes and increment tick field
+currentPID = 0;
+while (currentPID < 16) do
+    process_table_entry = PROCESS_TABLE + currentPID*16;
+    if ([process_table_entry + 4] != TERMINATED) then
+        [process_table_entry] = [process_table_entry] + 1; //Increment Tick
+    endif;
+    currentPID = currentPID + 1;
+endwhile;
+
+call SCHEDULER;
+
+restore;
+// CAUTION!!! USING REGISTER ALIASES AFTER RESTORE MAY LEAD TO BUGS!!
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;   //Set Mode Flag to 0
+ireturn;

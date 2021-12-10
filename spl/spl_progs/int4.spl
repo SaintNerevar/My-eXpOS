@@ -182,7 +182,7 @@ if (systemCallNum == INT_DELETE) then
 
     // Invalidate root file entry
     [ROOT_FILE + inode_index*8] = -1;
-    [ROOT_FILE + inode_index*8 + 1] = -1;
+    [ROOT_FILE + inode_index*8 + 1] = 0;
     [ROOT_FILE + inode_index*8 + 2] = -1;
     [ROOT_FILE + inode_index*8 + 3] = -1;
     [ROOT_FILE + inode_index*8 + 4] = -1;

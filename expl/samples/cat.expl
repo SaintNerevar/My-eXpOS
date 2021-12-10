@@ -6,7 +6,7 @@ int main() {
     begin
         temp = exposcall("Read", -1, name);
         fd = exposcall("Open", name);
-        if (temp < 0) then
+        if (fd < 0) then
             temp = exposcall("Write", -2, "Failed");
         else
             temp = exposcall("Read", fd, word);
